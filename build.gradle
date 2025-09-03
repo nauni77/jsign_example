@@ -1,0 +1,170 @@
+plugins {
+    id 'java'
+
+    id 'org.springframework.boot' version '3.5.5'
+    id 'io.spring.dependency-management' version '1.1.7'
+
+    id "io.freefair.lombok" version "8.14.2"
+    id "maven-publish"
+}
+
+group = 'de.noventi'
+version = System.getenv('GitVersion_FullSemVer')
+
+repositories {
+    // local maven storage - contains the snapshot release of jsign
+    mavenLocal()
+    // local maven storage - contains the snapshot release of jsign ... if uploaded
+    maven { url "https://repo.intra.vsa.de/artifactory/maven/" }
+    // use maven central for resolving dependencies
+    mavenCentral()
+}
+
+dependencies {
+    // jsign is compatible with JDK 1.8 until 21+ - only need to export the JDK parts
+    implementation 'net.jsign:jsign-core:7.2'
+    implementation 'org.buildobjects:jproc:2.8.2'
+
+    implementation 'com.google.guava:guava:33.2.1-jre'
+    implementation 'commons-codec:commons-codec:1.15'
+
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    // byte-buddy-1.17.7 and mockito-core-5.17.0 is included with SpringBoot 3.5.5
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+}
+
+publishing {
+    publications {
+        mavenJava( MavenPublication ) {
+            artifactId = 'code-signing-service'
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            name = "Noventi" //  optional target repository name
+            url = "https://repo.intra.vsa.de/artifactory/vsa-maven"
+            credentials {
+                // withCredentials will overwrite the credentials at jenkins build
+
+                // specify user and password via environment variable
+                username = System.getenv('ARTIFACTORY_USERNAME') ?: null as String
+                password = System.getenv('ARTIFACTORY_PASSWORD') ?: null as String
+                
+                // if not set via environment variable, try to read from gradle properties
+                if (username == null) {
+                    // Specify the publisher username - source: ~/.gradle/gradle.properties
+                    username = project.findProperty("noventi.artifactory.user") ?: "UNSET" as String
+                }
+                if (password == null) {
+                    // Provide the publisher password - source: ~/.gradle/gradle.properties
+                    password = project.findProperty("noventi.artifactory.password") ?: "UNSET" as String
+                }
+            }
+        }
+    }
+}
+
+task release {
+    dependsOn( "publishMavenJavaPublicationToNoventiRepository" )
+}
+
+// configure to upload boot jar to artifactory - more information at:
+// https://stackoverflow.com/questions/61197984/bootjar-mavenjar-artifact-wasnt-produced-by-this-build
+configurations {
+    [apiElements, runtimeElements].each {
+        it.outgoing.artifacts.removeIf { it.buildDependencies.getDependencies(null).contains(jar) }
+        it.outgoing.artifact(bootJar)
+    }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+// failure message: cannot access class sun.security.pkcs11.wrapper.PKCS11 (in module jdk.crypto.cryptoki)
+// changed order: jdk.crypto.cryptoki/sun.security.pkcs11.wrapper.PKCS11
+// => the test task needs to add the necessary exports
+test {
+    useJUnitPlatform()
+    // false, the build breaks if a test fails and no release is created
+    // true, the build continues, only the failing tests are reported at the jenkins build
+    ignoreFailures = false
+
+    jvmArgs = [
+        "--add-exports=jdk.crypto.cryptoki/sun.security.pkcs11.wrapper=ALL-UNNAMED",
+    ]
+
+    filter {
+        excludeTestsMatching "*ETOKEN*"
+        excludeTestsMatching "*YUBIKEY*"
+        excludeTestsMatching "*PIV*"
+    }
+}
+
+// only execute the PIV tests
+tasks.register('testPiv', Test) {
+    description = 'Runs tests depending on a Yubikey sign stick - Profile PIV'
+    group = 'verification'
+
+    shouldRunAfter test
+    useJUnitPlatform()
+
+    jvmArgs = [
+        '--add-exports=jdk.crypto.cryptoki/sun.security.pkcs11.wrapper=ALL-UNNAMED',
+    ]
+    filter {
+        includeTestsMatching "*PIV*"
+    }
+}
+
+// only execute the ETOKEN tests
+tasks.register('testEtoken', Test) {
+    description = 'Runs tests depending on a Etoken sign stick'
+    group = 'verification'
+
+    shouldRunAfter test
+    useJUnitPlatform()
+
+    jvmArgs = [
+        '--add-exports=jdk.crypto.cryptoki/sun.security.pkcs11.wrapper=ALL-UNNAMED',
+    ]
+    filter {
+        includeTestsMatching "*ETOKEN*"
+    }
+}
+
+// only execute the YUBIKEY tests
+tasks.register('testYubikey', Test) {
+    description = 'Runs tests depending on a Yubikey sign stick'
+    group = 'verification'
+
+    shouldRunAfter test
+
+    useJUnitPlatform()
+
+    jvmArgs = [
+        '--add-exports=jdk.crypto.cryptoki/sun.security.pkcs11.wrapper=ALL-UNNAMED',
+    ]
+    filter {
+        includeTestsMatching "*YUBIKEY*"
+    }
+}
+
+check.dependsOn testYubikey, testEtoken, testPiv
+
+// print the current defined version, works only at buildscript if version is set by gitversion
+task printVersion {
+    group 'versioning'
+    doLast {
+        println("version: " + version)
+    }
+}
