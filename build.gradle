@@ -5,17 +5,15 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.7'
 
     id "io.freefair.lombok" version "8.14.2"
-    id "maven-publish"
 }
 
-group = 'de.noventi'
-version = System.getenv('GitVersion_FullSemVer')
+group = 'de.company'
+name = 'jsign_example'
+version = '0.0.1-SNAPSHOT'
 
 repositories {
     // local maven storage - contains the snapshot release of jsign
     mavenLocal()
-    // local maven storage - contains the snapshot release of jsign ... if uploaded
-    maven { url "https://repo.intra.vsa.de/artifactory/maven/" }
     // use maven central for resolving dependencies
     mavenCentral()
 }
@@ -37,51 +35,6 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
-}
-
-publishing {
-    publications {
-        mavenJava( MavenPublication ) {
-            artifactId = 'code-signing-service'
-            from components.java
-        }
-    }
-    repositories {
-        maven {
-            name = "Noventi" //  optional target repository name
-            url = "https://repo.intra.vsa.de/artifactory/vsa-maven"
-            credentials {
-                // withCredentials will overwrite the credentials at jenkins build
-
-                // specify user and password via environment variable
-                username = System.getenv('ARTIFACTORY_USERNAME') ?: null as String
-                password = System.getenv('ARTIFACTORY_PASSWORD') ?: null as String
-                
-                // if not set via environment variable, try to read from gradle properties
-                if (username == null) {
-                    // Specify the publisher username - source: ~/.gradle/gradle.properties
-                    username = project.findProperty("noventi.artifactory.user") ?: "UNSET" as String
-                }
-                if (password == null) {
-                    // Provide the publisher password - source: ~/.gradle/gradle.properties
-                    password = project.findProperty("noventi.artifactory.password") ?: "UNSET" as String
-                }
-            }
-        }
-    }
-}
-
-task release {
-    dependsOn( "publishMavenJavaPublicationToNoventiRepository" )
-}
-
-// configure to upload boot jar to artifactory - more information at:
-// https://stackoverflow.com/questions/61197984/bootjar-mavenjar-artifact-wasnt-produced-by-this-build
-configurations {
-    [apiElements, runtimeElements].each {
-        it.outgoing.artifacts.removeIf { it.buildDependencies.getDependencies(null).contains(jar) }
-        it.outgoing.artifact(bootJar)
-    }
 }
 
 java {
@@ -160,11 +113,3 @@ tasks.register('testYubikey', Test) {
 }
 
 check.dependsOn testYubikey, testEtoken, testPiv
-
-// print the current defined version, works only at buildscript if version is set by gitversion
-task printVersion {
-    group 'versioning'
-    doLast {
-        println("version: " + version)
-    }
-}
