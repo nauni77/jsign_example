@@ -1,0 +1,5 @@
+signsecret:
+  keystore:
+    type: YUBIKEY
+    alias: X.509 Certificate for Digital Signature
+    pass: "ENTER_YOUR_PIN_HERE"

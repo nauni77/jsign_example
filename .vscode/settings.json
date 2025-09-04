@@ -1,0 +1,15 @@
+{
+  // enable the export for pkcs11 to java language server from VSCode
+  "java.jdt.ls.vmargs": "--add-exports=jdk.crypto.cryptoki/sun.security.pkcs11.wrapper=ALL-UNNAMED",
+
+  // enable the export for pkcs11 for tests
+  "java.test.config": [
+    {
+      "name": "Default",
+      "vmArgs": [
+        "--add-exports=jdk.crypto.cryptoki/sun.security.pkcs11.wrapper=ALL-UNNAMED"
+      ]
+    }
+  ],
+
+}

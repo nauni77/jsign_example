@@ -1,0 +1,42 @@
+{
+  // Verwendet IntelliSense zum Ermitteln möglicher Attribute.
+  // Zeigen Sie auf vorhandene Attribute, um die zugehörigen Beschreibungen anzuzeigen.
+  // Weitere Informationen finden Sie unter https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Current File",
+      "request": "launch",
+      "mainClass": "${file}",
+      "vmArgs": "--add-exports=jdk.crypto.cryptoki/sun.security.pkcs11.wrapper=ALL-UNNAMED -Dspring.config.additional-location=/Users/oliver.wagner/.config/spring-boot/codeSignService/"
+    },
+
+    {
+      "type": "java",
+      "name": "Launch Test Application (YUBIKEY)",
+      "request": "launch",
+      "mainClass": "de.company.signing.AppRun",
+      "projectName": "jsign_example.git",
+      "vmArgs": "-Dspring.profiles.active=test,yubikey --add-exports=jdk.crypto.cryptoki/sun.security.pkcs11.wrapper=ALL-UNNAMED -Dspring.config.additional-location=/Users/oliver.wagner/.config/spring-boot/codeSignService/"
+    },
+
+    {
+      "type": "java",
+      "name": "Launch Test Application (ETOKEN)",
+      "request": "launch",
+      "mainClass": "de.company.signing.AppRun",
+      "projectName": "jsign_example.git",
+      "vmArgs": "-Dspring.profiles.active=test,etoken --add-exports=jdk.crypto.cryptoki/sun.security.pkcs11.wrapper=ALL-UNNAMED -Dspring.config.additional-location=/Users/oliver.wagner/.config/spring-boot/codeSignService/"
+    },
+    
+    {
+      "type": "java",
+      "name": "SignApp",
+      "request": "launch",
+      "mainClass": "de.company.signing.SignApp",
+      "projectName": "jsign_example.git",
+      "vmArgs": "-Dspring.profiles.active=test,yubikey --add-exports=jdk.crypto.cryptoki/sun.security.pkcs11.wrapper=ALL-UNNAMED -Dspring.config.additional-location=/Users/oliver.wagner/.config/spring-boot/codeSignService/"
+    }
+  ]
+}

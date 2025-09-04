@@ -1,0 +1,5 @@
+signsecret:
+  keystore:
+    type: ETOKEN
+    alias: Sectigo_20240305123456
+    pass: "ENTER_YOUR_PIN_HERE"

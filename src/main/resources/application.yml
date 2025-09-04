@@ -1,0 +1,4 @@
+signsecret:
+  programname: Noventi Health SE - Code Sign Service
+  programurl: https://www.noventi.de
+  timestampauthority: "http://timestamp.sectigo.com"
