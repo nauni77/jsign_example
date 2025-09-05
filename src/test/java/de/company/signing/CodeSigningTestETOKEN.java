@@ -7,9 +7,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import lombok.extern.slf4j.Slf4j;
 
-@SpringBootTest(properties = {
-  "spring.config.additional-location=file:/Users/oliver.wagner/.config/spring-boot/codeSignService/"
-})
+@SpringBootTest
 @ActiveProfiles({"test", "etoken"})
 @Slf4j
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
